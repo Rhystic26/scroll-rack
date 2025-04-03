@@ -1,6 +1,7 @@
-import requests, json
+import requests, json, base64
 from PIL import Image
 from io import BytesIO
+import PySimpleGUI as sg
 
 # Given a card name, retrieves a card's data from scryfall in JSON format
 def retrieveCardData(cardName):
@@ -13,7 +14,7 @@ def retrieveCardData(cardName):
     if (cardJson['object'] == "error"):
         return None
     return cardJson
-# https://api.scryfall.com/cards/named?fuzzy=aust+com
+
 # Given a card name, retrieves an image of a card from Scryfall
 def retrieveCardImage(cardName):
     wordsInName = cardName.split()
@@ -27,3 +28,11 @@ def retrieveCardImage(cardName):
         cardImage = Image.open(BytesIO(card.content))
         return cardImage
     return None
+
+# Given a PIL image object, converts the object into a Base64 string readable by PySimple GUI
+def convertImageForGUI (cardImageData):
+    with BytesIO() as imageBuffer:
+        cardImageData.save(imageBuffer, format='PNG')
+        imageBuffer.seek(0)
+        cardImageDataBase64 = base64.b64encode(imageBuffer.read())
+        return cardImageDataBase64
