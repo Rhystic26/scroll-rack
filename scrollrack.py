@@ -50,6 +50,61 @@ def convertImageForGUI (cardImageData):
         cardImageDataBase64 = base64.b64encode(imageBuffer.read())
         return cardImageDataBase64
 
+class CardFace:
+    def __init__(self, inputDict):
+        self.name = inputDict['name']
+        self.typeLine = inputDict['type_line']
+        self.oracleText = []
+        self.Types = []
+        self.colors = inputDict['colors']
+        self.manaCost = inputDict['mana_cost']
+
+        self.typeLine = self.typeLine.split(" ")
+        for i in self.typeLine:
+            if i == "—":
+                break
+            self.Types.append(i)
+        
+        # Remove special characters from oracle text, split at newlines and periods
+        self.tempOracleText = inputDict['oracle_text']
+        self.tempOracleText = self.tempOracleText.replace("•", "")
+        self.tempOracleText = self.tempOracleText.replace("—", "\n")
+        if "Saga" in self.typeLine:
+            self.tempOracleText = self.tempOracleText.replace("III ", "")
+            self.tempOracleText = self.tempOracleText.replace("II ", "")
+            self.tempOracleText = self.tempOracleText.replace("I ", "")
+        self.tempOracleText = self.tempOracleText.split('\n')
+        for b, a in enumerate(self.tempOracleText):
+            self.tempOracleText[b] = a.split(".")
+            if (self.isCreature() or self.isVehicle()) and a.count(".") == 0:
+                self.tempOracleText[b] = a.split(",")
+        for i in self.tempOracleText:
+            for g in i:
+                self.oracleText.append(g)
+        self.oracleText = [a for a in self.oracleText if a]
+
+        tempName = self.name.split(",")
+        for b, a in enumerate(self.oracleText):
+            self.oracleText[b] = a.replace(self.name, "~")
+        for b, a in enumerate(self.oracleText):
+            self.oracleText[b] = a.replace(tempName[0], "~")
+
+        if (self.isCreature() or self.isVehicle()):
+            self.power = inputDict['power']
+            self.toughness = inputDict['toughness']
+
+    # Checks if a given card face is a creature
+    def isCreature(self):
+        for i in self.Types:
+            if i == 'Creature':
+                return True
+        return False
+    
+    def isVehicle(self):
+        if "Vehicle" in self.typeLine:
+            return True
+        return False
+
 class Card:
     def __init__(self, jsonData):
         self.name = jsonData['name']
@@ -59,16 +114,17 @@ class Card:
         self.keywords = jsonData['keywords']
         self.layout = jsonData['layout']
         self.typeLine = jsonData['type_line']
-        self.superTypes = []
+        self.Types = []
         self.colors = []
+        self.cardFaces = None
 
-        if self.layout == 'normal' or self.layout == 'prototype' or self.layout == 'mutate' or self.layout == 'meld':
+        if self.layout == 'normal' or self.layout == 'prototype' or self.layout == 'mutate' or self.layout == 'meld' or self.layout == 'case' or self.layout == 'class':
             self.oracleText = []
             self.typeLine = self.typeLine.split(" ")
             for i in self.typeLine:
                 if i == "—":
                     break
-                self.superTypes.append(i)
+                self.Types.append(i)
 
             self.colors = jsonData['colors']
             
@@ -79,17 +135,23 @@ class Card:
             self.tempOracleText = self.tempOracleText.split('\n')
             for b, a in enumerate(self.tempOracleText):
                 self.tempOracleText[b] = a.split(".")
-                if self.isCreature() and a.count(".") == 0:
+                if (self.isCreature() or self.isVehicle()) and a.count(".") == 0:
                     self.tempOracleText[b] = a.split(",")
             for i in self.tempOracleText:
                 for g in i:
                     self.oracleText.append(g)
             self.oracleText = [a for a in self.oracleText if a]
 
-            if self.isCreature():
+            tempName = self.name.split(",")
+            for b, a in enumerate(self.oracleText):
+                self.oracleText[b] = a.replace(self.name, "~")
+            for b, a in enumerate(self.oracleText):
+                self.oracleText[b] = a.replace(tempName[0], "~")
+
+            if (self.isCreature() or self.isVehicle()):
                 self.power = jsonData['power']
                 self.toughness = jsonData['toughness']
-            
+            print(self.oracleText)
 
         elif self.layout == 'saga':
             self.oracleText = []
@@ -97,7 +159,7 @@ class Card:
             for i in self.typeLine:
                 if i == "—":
                     break
-                self.superTypes.append(i)
+                self.Types.append(i)
 
             self.colors = jsonData['colors']
             
@@ -116,32 +178,32 @@ class Card:
                     self.oracleText.append(g)
             print(self.oracleText)
             self.oracleText = [a for a in self.oracleText if a]
+            
+            tempName = self.name.split(",")
+            for b, a in enumerate(self.oracleText):
+                self.oracleText[b] = a.replace(self.name, "~")
+            for b, a in enumerate(self.oracleText):
+                self.oracleText[b] = a.replace(tempName[0], "~")
 
-            if self.isCreature():
+            if (self.isCreature() or self.isVehicle()):
                 self.power = jsonData['power']
                 self.toughness = jsonData['toughness']
 
-        elif self.layout == 'adventure' or self.layout == 'split' or self.layout == 'modal_dfc':
+        elif self.layout == 'flip' or self.layout == 'transform' or self.layout == 'adventure' or self.layout == 'split' or self.layout == 'modal_dfc':
             self.cardFaces = []
-
-
-        elif self.layout == 'flip' or self.layout == 'transform':
-            self.cardFaces = []
-            pass
-
-        elif self.layout == 'class':
-            self.oracleText = []
-            pass
-
-        elif self.layout == 'case':
-            self.oracleText = []
-            pass     
+            for i in jsonData['card_faces']:
+                self.cardFaces.append(CardFace(i))     
 
     # Checks if a given card is a creature
     def isCreature(self):
-        for i in self.superTypes:
+        for i in self.Types:
             if i == 'Creature':
                 return True
+        return False
+    
+    def isVehicle(self):
+        if "Vehicle" in self.typeLine:
+            return True
         return False
 
 # Given a card object, craft a Scryfall search query to find similar cards
@@ -223,8 +285,7 @@ while True:
         programWindow['displayInputCard'].update(data=searchedCardPNG)
         programWindow['cardName'].update(searchedCard.name)
         programWindow['cardPrice'].update("Price: $" + searchedCard.priceUSD + " USD")
-        print(searchedCard.oracleText)
-
+        
     elif event == 'Run Scroll Rack':
 
         # Reset card name elements
