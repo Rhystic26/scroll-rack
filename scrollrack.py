@@ -34,6 +34,8 @@ def retrieveCardList(listRequest):
     cardRequest = "https://api.scryfall.com/cards/search?q="
     cardList = requests.get(cardRequest+listRequest)
     cardListJson = cardList.json()
+    if cardListJson['object'] == 'error':
+        return None
     cardListData = cardListJson['data']
     cardListObjects = []
     for i in cardListData:
@@ -58,54 +60,97 @@ class Card:
         self.layout = jsonData['layout']
         self.typeLine = jsonData['type_line']
         self.superTypes = []
+        self.colors = []
 
-        if self.layout == 'normal':
-            self.typeLine.split(" ")
+        if self.layout == 'normal' or self.layout == 'prototype' or self.layout == 'mutate' or self.layout == 'meld':
+            self.oracleText = []
+            self.typeLine = self.typeLine.split(" ")
             for i in self.typeLine:
                 if i == "—":
                     break
                 self.superTypes.append(i)
+
             self.colors = jsonData['colors']
-            self.oracleText = jsonData['oracle_text']
+            
+            # Remove special characters from oracle text, split at newlines and periods
+            self.tempOracleText = jsonData['oracle_text']
+            self.tempOracleText = self.tempOracleText.replace("•", "")
+            self.tempOracleText = self.tempOracleText.replace("—", "\n")
+            self.tempOracleText = self.tempOracleText.split('\n')
+            for b, a in enumerate(self.tempOracleText):
+                self.tempOracleText[b] = a.split(".")
+                if self.isCreature() and a.count(".") == 0:
+                    self.tempOracleText[b] = a.split(",")
+            for i in self.tempOracleText:
+                for g in i:
+                    self.oracleText.append(g)
+            self.oracleText = [a for a in self.oracleText if a]
+
             if self.isCreature():
                 self.power = jsonData['power']
                 self.toughness = jsonData['toughness']
-            return
-        
-        elif self.layout == 'prototype' or self.layout == 'mutate':
-            pass
+            
 
-        elif self.layout == 'meld':
-            pass
+        elif self.layout == 'saga':
+            self.oracleText = []
+            self.typeLine = self.typeLine.split(" ")
+            for i in self.typeLine:
+                if i == "—":
+                    break
+                self.superTypes.append(i)
 
-        elif self.layout == 'case' or self.layout == 'saga':
-            pass
+            self.colors = jsonData['colors']
+            
+            # Remove special characters from oracle text, split at newlines and periods
+            self.tempOracleText = jsonData['oracle_text']
+            self.tempOracleText = self.tempOracleText.replace("•", "")
+            self.tempOracleText = self.tempOracleText.replace("—", "\n")
+            self.tempOracleText = self.tempOracleText.replace("III ", "")
+            self.tempOracleText = self.tempOracleText.replace("II ", "")
+            self.tempOracleText = self.tempOracleText.replace("I ", "")
+            self.tempOracleText = self.tempOracleText.split('\n')
+            for b, a in enumerate(self.tempOracleText):
+                self.tempOracleText[b] = a.split(".")
+            for i in self.tempOracleText:
+                for g in i:
+                    self.oracleText.append(g)
+            print(self.oracleText)
+            self.oracleText = [a for a in self.oracleText if a]
+
+            if self.isCreature():
+                self.power = jsonData['power']
+                self.toughness = jsonData['toughness']
 
         elif self.layout == 'adventure' or self.layout == 'split' or self.layout == 'modal_dfc':
-            pass
+            self.cardFaces = []
+
 
         elif self.layout == 'flip' or self.layout == 'transform':
+            self.cardFaces = []
             pass
 
-        elif self.layout == 'class' or self.layout == 'leveler':
+        elif self.layout == 'class':
+            self.oracleText = []
             pass
 
-        # self.typeLine = [i for i in self.typeLine if i != "—"]       
+        elif self.layout == 'case':
+            self.oracleText = []
+            pass     
 
     # Checks if a given card is a creature
     def isCreature(self):
         for i in self.superTypes:
-            if i == 'creature':
+            if i == 'Creature':
                 return True
         return False
 
 # Given a card object, craft a Scryfall search query to find similar cards
 def analyzeCard (inputCard, mode):
     searchString = ""
-    for i in inputCard.superTypes:
+    '''for i in inputCard.superTypes:
         searchString += ("+t%3A" + i)
     if inputCard.isCreature() and mode <= 1:
-        searchString += ("+pow>%3D" + inputCard.power + "+tou>%3D" + inputCard.toughness)
+        searchString += ("+pow>%3D" + inputCard.power + "+tou>%3D" + inputCard.toughness)'''
     
     return searchString
     
@@ -119,20 +164,14 @@ def analyzeCard (inputCard, mode):
 
 # ********************Main Program********************
 
-# cd = retrieveCardList("%28oracle%3A%22When+~+enters%2C+look+at+the+top+four+cards+of+target+opponent%E2%80%99s+library%2C+exile+one+of+them+face+down%2C+then+put+the+rest+on+the+bottom+of+that+library+in+a+random+order.%22+OR+oracle%3A%22You+may+cast+that+card+for+as+long+as+it+remains+exiled%2C+and+mana+of+any+type+can+be+spent+to+cast+that+spell.%22%29")
-
-'''t1 = retrieveCardData("baleful eidolon")
-t1Card = createCard(t1)
-t1Str = analyzeCard(t1Card, 1)
-cd1 = retrieveCardList(t1Str)
-for i in cd1:
-    print(i.name)
-'''
-# Program variables
+# Global variables
 searchedCardImage = None
 searchedCardPNG = None
 searchedCardData = None
 searchedCard = None
+analysisString = None
+suggestedCardList = None
+cardDisplayList = []
 
 # UI setup
 col1 = [[sg.vtop(sg.Text("Search for a card here:"))], 
@@ -164,6 +203,15 @@ while True:
         programWindow['displayInputCard'].update(filename='magic_card_back.png')
         programWindow['cardName'].update("")
         programWindow['cardPrice'].update("")
+        programWindow['suggestedCard1Name'].update("")
+        programWindow['suggestedCard1Price'].update("")
+        programWindow['displaySuggestedCard1'].update(filename='magic_card_back.png')
+        programWindow['suggestedCard2Name'].update("")
+        programWindow['suggestedCard2Price'].update("")
+        programWindow['displaySuggestedCard2'].update(filename='magic_card_back.png')
+        programWindow['suggestedCard3Name'].update("")
+        programWindow['suggestedCard3Price'].update("")
+        programWindow['displaySuggestedCard3'].update(filename='magic_card_back.png')
 
         searchedCardImage = retrieveCardImage(values['cardInput'])
         if searchedCardImage == None:
@@ -175,10 +223,52 @@ while True:
         programWindow['displayInputCard'].update(data=searchedCardPNG)
         programWindow['cardName'].update(searchedCard.name)
         programWindow['cardPrice'].update("Price: $" + searchedCard.priceUSD + " USD")
+        print(searchedCard.oracleText)
 
     elif event == 'Run Scroll Rack':
+
+        # Reset card name elements
+        programWindow['suggestedCard1Name'].update("Card not found")
+        programWindow['suggestedCard2Name'].update("Card not found")
+        programWindow['suggestedCard3Name'].update("Card not found")
+
+        # If no card has been searched, exit function
         if searchedCardImage == None:
             programWindow['cardName'].update("No card selected!")
             continue
+
+        # Run card analysis
+        for i in range (1, 5):
+            analysisString = analyzeCard(searchedCard, i)
+            suggestedCardList = retrieveCardList(analysisString)
+            if suggestedCardList == None:
+                continue
+            else:
+                x = 0
+                while len(cardDisplayList) < 3:
+                    if 0 <= x < len(suggestedCardList):
+                        cardDisplayList.append(suggestedCardList[x])
+                    else:
+                        break
+            if len(cardDisplayList) == 3:
+                break
+        
+        # Display final suggested cards on screen
+        if 0 < len(cardDisplayList):
+            programWindow['suggestedCard1Name'].update(cardDisplayList[0].name)
+            programWindow['suggestedCard1Price'].update(cardDisplayList[0].priceUSD)
+            programWindow['displaySuggestedCard1'].update(convertImageForGUI(retrieveCardImage(cardDisplayList[0].name)))
+
+        if 1 < len(cardDisplayList):
+            programWindow['suggestedCard2Name'].update(cardDisplayList[1].name)
+            programWindow['suggestedCard2Price'].update(cardDisplayList[1].priceUSD)
+            programWindow['displaySuggestedCard2'].update(convertImageForGUI(retrieveCardImage(cardDisplayList[1].name)))
+
+        if 2 < len(cardDisplayList):
+            programWindow['suggestedCard3Name'].update(cardDisplayList[2].name)
+            programWindow['suggestedCard3Price'].update(cardDisplayList[2].priceUSD)
+            programWindow['displaySuggestedCard3'].update(convertImageForGUI(retrieveCardImage(cardDisplayList[2].name)))
+
+                
 
 programWindow.close()
