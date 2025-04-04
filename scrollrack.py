@@ -29,7 +29,18 @@ def retrieveCardImage(cardName):
         return cardImage
     return None
 
-# Given a PIL image object, converts the object into a Base64 bytestring
+# Given a Scryfall search string, retrieves a list of cards from Scryfall in JSON format and parses them into a dictionary
+def retrieveCardList(listRequest):
+    cardRequest = "https://api.scryfall.com/cards/search?q="
+    cardList = requests.get(cardRequest+listRequest)
+    cardListJson = cardList.json()
+    cardListData = cardListJson['data']
+    cardListObjects = []
+    for i in cardListData:
+        cardListObjects.append(Card(i))
+    return cardListObjects
+
+# Given a Pillow image object, converts the object into a Base64 bytestring
 def convertImageForGUI (cardImageData):
     with BytesIO() as imageBuffer:
         cardImageData.save(imageBuffer, format='PNG')
@@ -43,37 +54,61 @@ class Card:
         self.prices = jsonData['prices']
         self.priceUSD = self.prices['usd']
         self.cmc = jsonData['cmc']
-        self.colors = jsonData['colors']
         self.keywords = jsonData['keywords']
-        self.oracleText = jsonData['oracle_text']
+        self.layout = jsonData['layout']
         self.typeLine = jsonData['type_line']
-        self.typeLine.split(" ")
         self.superTypes = []
-        for i in self.typeLine:
-            if i == "—":
-                break
-            self.superTypes.append(i)        
 
-class Creature (Card):
-    def __init__(self, jsonData):
-        super().__init__(jsonData)
-        self.power = jsonData['power']
-        self.toughness = jsonData['toughness']
+        if self.layout == 'normal':
+            self.typeLine.split(" ")
+            for i in self.typeLine:
+                if i == "—":
+                    break
+                self.superTypes.append(i)
+            self.colors = jsonData['colors']
+            self.oracleText = jsonData['oracle_text']
+            if self.isCreature():
+                self.power = jsonData['power']
+                self.toughness = jsonData['toughness']
+            return
+        
+        elif self.layout == 'prototype' or self.layout == 'mutate':
+            pass
 
-# Given JSON data for a card, creates a card object using the correct class (creature or non-creature)
-def createCard(cardJson):
-    typeLine = cardJson['type_line']
-    typeLine.split(" ")
-    for i in typeLine:
-        if i == "creature":
-            card = Creature(cardJson)
-            return card
-    card = Card(cardJson)
-    return card
+        elif self.layout == 'meld':
+            pass
+
+        elif self.layout == 'case' or self.layout == 'saga':
+            pass
+
+        elif self.layout == 'adventure' or self.layout == 'split' or self.layout == 'modal_dfc':
+            pass
+
+        elif self.layout == 'flip' or self.layout == 'transform':
+            pass
+
+        elif self.layout == 'class' or self.layout == 'leveler':
+            pass
+
+        # self.typeLine = [i for i in self.typeLine if i != "—"]       
+
+    # Checks if a given card is a creature
+    def isCreature(self):
+        for i in self.superTypes:
+            if i == 'creature':
+                return True
+        return False
 
 # Given a card object, craft a Scryfall search query to find similar cards
-def analyzeCard (inputCard):
-    pass
+def analyzeCard (inputCard, mode):
+    searchString = ""
+    for i in inputCard.superTypes:
+        searchString += ("+t%3A" + i)
+    if inputCard.isCreature() and mode <= 1:
+        searchString += ("+pow>%3D" + inputCard.power + "+tou>%3D" + inputCard.toughness)
+    
+    return searchString
+    
 
 #evergreen keywords
 #evasion: trample, menace, flying
@@ -84,6 +119,15 @@ def analyzeCard (inputCard):
 
 # ********************Main Program********************
 
+# cd = retrieveCardList("%28oracle%3A%22When+~+enters%2C+look+at+the+top+four+cards+of+target+opponent%E2%80%99s+library%2C+exile+one+of+them+face+down%2C+then+put+the+rest+on+the+bottom+of+that+library+in+a+random+order.%22+OR+oracle%3A%22You+may+cast+that+card+for+as+long+as+it+remains+exiled%2C+and+mana+of+any+type+can+be+spent+to+cast+that+spell.%22%29")
+
+'''t1 = retrieveCardData("baleful eidolon")
+t1Card = createCard(t1)
+t1Str = analyzeCard(t1Card, 1)
+cd1 = retrieveCardList(t1Str)
+for i in cd1:
+    print(i.name)
+'''
 # Program variables
 searchedCardImage = None
 searchedCardPNG = None
@@ -93,7 +137,7 @@ searchedCard = None
 # UI setup
 col1 = [[sg.vtop(sg.Text("Search for a card here:"))], 
                  [sg.vtop(sg.Input(key='cardInput'))], 
-                 sg.vtop([sg.Button('Search for Card'), sg.Button('Run Scroll Rack'), sg.Button('Quit')])]
+                 sg.vtop([sg.Button('Search for Card'), sg.Button('Run Scroll Rack')])]
 col2 = [[sg.Text(key='cardName')], [sg.Text(key='cardPrice')], [sg.Image(key='displayInputCard', filename='magic_card_back.png')]]
 col3a = [[sg.Text(key='suggestedCard1Name')], [sg.Text(key='suggestedCard1Price')], [sg.Image(key='displaySuggestedCard1', filename='magic_card_back.png')]]
 col3b = [[sg.Text(key='suggestedCard2Name')], [sg.Text(key='suggestedCard2Price')], [sg.Image(key='displaySuggestedCard2', filename='magic_card_back.png')]]
@@ -113,7 +157,7 @@ while True:
     event, values = programWindow.read()
 
     # Check if user quits program
-    if event == sg.WINDOW_CLOSED or event == 'Quit': 
+    if event == sg.WINDOW_CLOSED: 
         break
 
     if event == 'Search for Card':
@@ -127,7 +171,7 @@ while True:
             continue
         searchedCardPNG = convertImageForGUI(searchedCardImage)
         searchedCardData = retrieveCardData(values['cardInput'])
-        searchedCard = createCard(searchedCardData)
+        searchedCard = Card(searchedCardData)
         programWindow['displayInputCard'].update(data=searchedCardPNG)
         programWindow['cardName'].update(searchedCard.name)
         programWindow['cardPrice'].update("Price: $" + searchedCard.priceUSD + " USD")
