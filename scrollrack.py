@@ -82,32 +82,59 @@ def analyzeCard (inputCard):
 #defensive: hexproof, indestructible, ward
 #combat defensive: vigilance, reach
 
-#main loop
-programLayout = [[sg.Text("Search for a card here:"), sg.Text(key='cardName')], 
-                 [sg.vtop(sg.Input(key='cardInput')), sg.Image(key='displayInputCard', size=(146,204))], 
-                 [sg.Text(key='cardNotFound')], 
-                 sg.vtop([sg.Button('Search for Card'), sg.Button('Quit')])]
+# ********************Main Program********************
 
+# Program variables
+searchedCardImage = None
+searchedCardPNG = None
+searchedCardData = None
+searchedCard = None
+
+# UI setup
+col1 = [[sg.vtop(sg.Text("Search for a card here:"))], 
+                 [sg.vtop(sg.Input(key='cardInput'))], 
+                 sg.vtop([sg.Button('Search for Card'), sg.Button('Run Scroll Rack'), sg.Button('Quit')])]
+col2 = [[sg.Text(key='cardName')], [sg.Text(key='cardPrice')], [sg.Image(key='displayInputCard', filename='magic_card_back.png')]]
+col3a = [[sg.Text(key='suggestedCard1Name')], [sg.Text(key='suggestedCard1Price')], [sg.Image(key='displaySuggestedCard1', filename='magic_card_back.png')]]
+col3b = [[sg.Text(key='suggestedCard2Name')], [sg.Text(key='suggestedCard2Price')], [sg.Image(key='displaySuggestedCard2', filename='magic_card_back.png')]]
+col3c = [[sg.Text(key='suggestedCard3Name')], [sg.Text(key='suggestedCard3Price')], [sg.Image(key='displaySuggestedCard3', filename='magic_card_back.png')]]
+
+programLayout = [[sg.Column(col1), sg.Column(col2)], 
+                 [sg.Text(text='Suggested Alternatives:')], 
+                 [sg.Column(col3a), sg.Column(col3b), sg.Column(col3c)]]
+
+# Initialize window
 programWindow = sg.Window('Scroll Rack', programLayout)
 
+# main loop
 while True:
+
+    # Read user input
     event, values = programWindow.read()
 
-    if event == sg.WINDOW_CLOSED or event == 'Quit':
+    # Check if user quits program
+    if event == sg.WINDOW_CLOSED or event == 'Quit': 
         break
+
     if event == 'Search for Card':
-        programWindow['cardNotFound'].update("")
-        programWindow['displayInputCard'].update()
+        programWindow['displayInputCard'].update(filename='magic_card_back.png')
         programWindow['cardName'].update("")
-        print(programWindow['displayInputCard'].Size)
+        programWindow['cardPrice'].update("")
+
         searchedCardImage = retrieveCardImage(values['cardInput'])
         if searchedCardImage == None:
-            programWindow['cardNotFound'].update("Card not found")
+            programWindow['cardName'].update("Card not found")
             continue
         searchedCardPNG = convertImageForGUI(searchedCardImage)
         searchedCardData = retrieveCardData(values['cardInput'])
         searchedCard = createCard(searchedCardData)
         programWindow['displayInputCard'].update(data=searchedCardPNG)
         programWindow['cardName'].update(searchedCard.name)
+        programWindow['cardPrice'].update("Price: $" + searchedCard.priceUSD + " USD")
+
+    elif event == 'Run Scroll Rack':
+        if searchedCardImage == None:
+            programWindow['cardName'].update("No card selected!")
+            continue
 
 programWindow.close()
