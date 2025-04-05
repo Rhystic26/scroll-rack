@@ -14,6 +14,7 @@ Stuff
 ### Card Analysis Algorithm
 Stuff
 ### Takeaways
+Stuff
 ## License
 Copyright (c) 2025 Jacob Casper  
 This project is under the MIT License. More details can be found in the LICENSE file.
