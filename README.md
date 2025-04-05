@@ -7,6 +7,8 @@ A Magic: The Gathering deck-building application that suggests cheaper alternati
 Finish
 ## Usage
 Finish
+### Limitations
+Finish
 ## Application Design and Structure
 Stuff
 ### Program Flow
