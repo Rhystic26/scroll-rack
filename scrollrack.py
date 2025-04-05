@@ -331,14 +331,11 @@ def analyzeCard (inputCard, mode):
         if ('vigilance' in inputCard.keywords) or ('reach' in inputCard.keywords) or ('lifelink' in inputCard.keywords):
             searchString += ("+%28" + "+kw%3Avigilance+OR" + "+kw%3Areach+OR" + "+kw%3Alifelink" + "+%29")
         for i in inputCard.keywords:
-            print(i)
             if i != 'trample' and i != 'menace' and i != 'flying' and i != 'first strike' and i != 'double strike' and i != 'deathtouch' and i != 'haste' and i != 'hexproof' and i != 'indestructible' and i != 'ward' and i != 'protection' and i != 'vigilance' and i != 'reach' and i != 'lifelink':
-                print("oops")
                 searchString += ("+kw%3A" + i)
         searchString += "+%29"
 
     searchString += "&order=usd&dir=asc"
-    print(searchString)
     return searchString
 
 # ********************Main Program********************
@@ -442,6 +439,7 @@ while True:
                 break
         
         # Display final suggested cards on screen
+        print(analysisString)
         if 0 < len(cardDisplayList):
             programWindow['suggestedCard1Name'].update(cardDisplayList[0].name)
             if cardDisplayList[0].priceUSD != None:
