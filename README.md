@@ -5,5 +5,5 @@ A Magic: The Gathering deck-building application that suggests cheaper alternati
 - Discover obscure MTG cards! (Seriously, this program spits out strange stuff sometimes.)
 
 ## License
-Copyright (c) 2025 Jacob Casper
+Copyright (c) 2025 Jacob Casper  
 This project is under the MIT License. More details can be found in the LICENSE file.
