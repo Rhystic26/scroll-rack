@@ -2,6 +2,14 @@ import requests, json, base64
 from PIL import Image
 from io import BytesIO
 import FreeSimpleGUI as sg
+import sys, os
+
+def resource(relative_path):
+    base_path = getattr(
+        sys,
+        '_MEIPASS',
+        os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
 
 # Given a card name, retrieves a card's data from scryfall in JSON format
 def retrieveCardData(cardName):
@@ -392,15 +400,16 @@ searchedCard = None
 analysisString = None
 suggestedCardList = None
 cardDisplayList = []
+cardBack = resource('magic_card_back.png')
 
 # UI setup
 col1 = [[sg.vtop(sg.Text("Search for a card here:"))], 
                  [sg.vtop(sg.Input(key='cardInput'))], 
                  sg.vtop([sg.Button('Search for Card'), sg.Button('Run Scroll Rack')])]
-col2 = [[sg.Text(key='cardName')], [sg.Text(key='cardPrice')], [sg.Image(key='displayInputCard', filename='magic_card_back.png')]]
-col3a = [[sg.Text(key='suggestedCard1Name')], [sg.Text(key='suggestedCard1Price')], [sg.Image(key='displaySuggestedCard1', filename='magic_card_back.png')]]
-col3b = [[sg.Text(key='suggestedCard2Name')], [sg.Text(key='suggestedCard2Price')], [sg.Image(key='displaySuggestedCard2', filename='magic_card_back.png')]]
-col3c = [[sg.Text(key='suggestedCard3Name')], [sg.Text(key='suggestedCard3Price')], [sg.Image(key='displaySuggestedCard3', filename='magic_card_back.png')]]
+col2 = [[sg.Text(key='cardName')], [sg.Text(key='cardPrice')], [sg.Image(key='displayInputCard', source=cardBack)]]
+col3a = [[sg.Text(key='suggestedCard1Name')], [sg.Text(key='suggestedCard1Price')], [sg.Image(key='displaySuggestedCard1', source=cardBack)]]
+col3b = [[sg.Text(key='suggestedCard2Name')], [sg.Text(key='suggestedCard2Price')], [sg.Image(key='displaySuggestedCard2', source=cardBack)]]
+col3c = [[sg.Text(key='suggestedCard3Name')], [sg.Text(key='suggestedCard3Price')], [sg.Image(key='displaySuggestedCard3', source=cardBack)]]
 
 programLayout = [[sg.Column(col1), sg.Column(col2)], 
                  [sg.Text(text='Suggested Alternatives:')], 
@@ -420,18 +429,18 @@ while True:
         break
 
     if event == 'Search for Card':
-        programWindow['displayInputCard'].update(filename='magic_card_back.png')
+        programWindow['displayInputCard'].update(source=cardBack)
         programWindow['cardName'].update("")
         programWindow['cardPrice'].update("")
         programWindow['suggestedCard1Name'].update("")
         programWindow['suggestedCard1Price'].update("")
-        programWindow['displaySuggestedCard1'].update(filename='magic_card_back.png')
+        programWindow['displaySuggestedCard1'].update(source=cardBack)
         programWindow['suggestedCard2Name'].update("")
         programWindow['suggestedCard2Price'].update("")
-        programWindow['displaySuggestedCard2'].update(filename='magic_card_back.png')
+        programWindow['displaySuggestedCard2'].update(source=cardBack)
         programWindow['suggestedCard3Name'].update("")
         programWindow['suggestedCard3Price'].update("")
-        programWindow['displaySuggestedCard3'].update(filename='magic_card_back.png')
+        programWindow['displaySuggestedCard3'].update(source=cardBack)
 
         searchedCardImage = retrieveCardImage(values['cardInput'])
         if searchedCardImage == None:
