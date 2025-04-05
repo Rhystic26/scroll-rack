@@ -280,7 +280,50 @@ def analyzeCard (inputCard, mode):
     searchString = "game%3Apaper"
 
     if inputCard.layout == 'flip' or inputCard.layout == 'transform' or inputCard.layout == 'adventure' or inputCard.layout == 'split' or inputCard.layout == 'modal_dfc':
-        pass
+        searchString += "+%28"
+       
+        for i in inputCard.cardFaces:
+            searchString += "+%28"
+            
+            searchString += "+%28"
+            for g in i.oracleText:
+                x = g.replace(" ", "+")
+                searchString += ('+fulloracle%3A"' + x + '"+OR')
+            searchString += "+%29"
+
+            searchString += "+%28"
+            if i.isCreature() and 'enchantment' in i.types:
+                searchString += ("+t%3Acreature+OR" + "+t%3Aenchantment")
+            else:
+                for g in i.types:
+                    if g == 'legendary':
+                        continue
+                    searchString += ("+t%3A" + g + "+OR")
+            searchString += "+%29"
+
+            if (i.isCreature() or i.isVehicle()):
+                if mode < 2:
+                    searchString += "+%28"
+                    searchString += ("+pow>%3D" + i.power)
+                    searchString += ("+tou>%3D" + i.toughness)
+                    searchString += "+%29"
+
+            if mode < 4:
+                colorString = ""
+                for g in i.colors:
+                    colorString += g
+                searchString += "+%28"
+                searchString += ("+c<%3D" + colorString)
+                searchString += "+%29"
+        
+            if mode < 3:
+                searchString += "+%28"
+                searchString += ("+m%3D" + i.manaCost)
+                searchString += "+%29"
+
+            searchString += "+%29+OR"
+            
+        searchString += "+%29"
 
     else:
         searchString += "+%28"
@@ -318,6 +361,7 @@ def analyzeCard (inputCard, mode):
             searchString += "+%28"
             searchString += ("+mv%3D" + inputCard.cmc)
             searchString += "+%29"
+
     if mode < 4:
         searchString += "+%28"
         if ('trample' in inputCard.keywords) or ('menace' in inputCard.keywords) or ('flying' in inputCard.keywords):
@@ -413,6 +457,10 @@ while True:
         # If no card has been searched, exit function
         if searchedCardImage == None:
             programWindow['cardName'].update("No card selected!")
+            continue
+
+        if 'Land' in searchedCard.typeLine:
+            programWindow['cardName'].update("Searching for lands not supported - coming in future update!")
             continue
 
         # Run card analysis
