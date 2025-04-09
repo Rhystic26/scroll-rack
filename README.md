@@ -4,8 +4,7 @@ A Magic: The Gathering deck-building application that suggests cheaper alternati
 - Find similar cards to those already in your decklist! (For example, if you're playing a white keywords matter deck and already have Baneslayer Angel, Scroll Rack will suggest Zetalpa, Primal Dawn, Akroma, Angel of Wrath, and Sire of Seven Deaths - all creatures around the same mana cost that have similar keywords and color identities. As another example, say you're playing an UB theft deck and have included Thief of Sanity - Scroll Rack would suggest Hostage Taker and Gonti, Lord of Luxury.) 
 - Discover obscure MTG cards! (Seriously, this program spits out strange stuff sometimes.)
 ## Screenshots
-![Alt text](/screenshots/fierce_guardianship_search.png?raw=true)
-![Alt text](/screenshots/baneslayer_angel_search.png?raw=true)
+<img src="/screenshots/fierce_guardianship_search.png?raw=true" width="40%" height="40%"> <img src="/screenshots/baneslayer_angel_search.png?raw=true" width="40%" height="40%">
 ## Requirements (only if building from source)
 - Python 3.13 or later
 - Pip
